@@ -11,6 +11,7 @@ import (
 )
 
 const ref = "$ref"
+
 var refrv = reflect.ValueOf(ref)
 
 type Option interface {
@@ -65,8 +66,8 @@ type resolveCtx struct {
 // Resolve takes a target `v`, and a JSON pointer `spec`.
 // spec is expected to be in the form of
 //
-//    [scheme://[userinfo@]host/path[?query]]#fragment
-//    [scheme:opaque[?query]]#fragment
+//	[scheme://[userinfo@]host/path[?query]]#fragment
+//	[scheme:opaque[?query]]#fragment
 //
 // where everything except for `#fragment` is optional.
 // If the fragment is empty, an error is returned.

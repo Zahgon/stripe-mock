@@ -1,10 +1,5 @@
 package spec
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
 //
 // Public values
 //
@@ -127,71 +122,19 @@ type Schema struct {
 	XResourceID         string              `json:"x-resourceId,omitempty"`
 }
 
-func (s *Schema) String() string {
-	js, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	return string(js)
-}
+func (s *Schema) String() string { _ = "STUB: not implemented"; return "" }
 
 // UnmarshalJSON is a custom JSON unmarshaling implementation for Schema that
 // provides better error messages instead of silently ignoring fields.
-func (s *Schema) UnmarshalJSON(data []byte) error {
-	var rawFields map[string]interface{}
-	err := json.Unmarshal(data, &rawFields)
-	if err != nil {
-		return err
-	}
+func (s *Schema) UnmarshalJSON(data []byte) error { _ = "STUB: not implemented"; return nil }
 
-	additionalPropertiesValue := rawFields["additionalProperties"]
+// Define a second type that's identical to Schema, but distinct, so that when
+// we call json.Unmarshal it will call the default implementation of
+// unmarshalling a Schema object instead of recursively calling this
+// UnmarshalJSON function again.
 
-	for _, supportedField := range supportedSchemaFields {
-		delete(rawFields, supportedField)
-	}
-	for unsupportedField := range rawFields {
-		return fmt.Errorf(
-			"unsupported field in JSON schema: '%s'", unsupportedField)
-	}
-
-	// Define a second type that's identical to Schema, but distinct, so that when
-	// we call json.Unmarshal it will call the default implementation of
-	// unmarshalling a Schema object instead of recursively calling this
-	// UnmarshalJSON function again.
-	type schemaAlias Schema
-	var inner schemaAlias
-	err = json.Unmarshal(data, &inner)
-	if err != nil {
-		return err
-	}
-	*s = Schema(inner)
-
-	additionalPropertiesBool, ok := additionalPropertiesValue.(bool)
-
-	// AdditionalProperties can be a `false` or `Schema` object for convenience turn
-	// load bool and schema into different fields
-	if ok {
-		s.AdditionalPropertiesAllowed = additionalPropertiesBool
-		return nil
-	} else {
-		s.AdditionalPropertiesAllowed = true
-	}
-
-	if additionalPropertiesValue != nil {
-		type additionalProperties struct {
-			AdditionalProperties *Schema `json:"additionalProperties,omitempty"`
-		}
-		var addProps additionalProperties
-		err = json.Unmarshal(data, &addProps)
-		if err != nil {
-			return err
-		}
-
-		s.AdditionalProperties = addProps.AdditionalProperties
-	}
-
-	return nil
-}
+// AdditionalProperties can be a `false` or `Schema` object for convenience turn
+// load bool and schema into different fields
 
 // MediaType is a struct bucketing a request or response by media type in an
 // OpenAPI specification.

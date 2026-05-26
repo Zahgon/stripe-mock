@@ -124,7 +124,7 @@ func (nc *NumberConstraint) Validate(v interface{}) (err error) {
 		}
 
 		if nc.multipleOf != 0 {
-	    if math.Mod(f, nc.multipleOf) != 0 {
+			if math.Mod(f, nc.multipleOf) != 0 {
 				return errors.New("numeric value is fails multipleOf validation")
 			}
 		}

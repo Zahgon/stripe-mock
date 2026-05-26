@@ -22,7 +22,7 @@ func httpCode(handler http.HandlerFunc, mode, url string, values url.Values) int
 
 // HTTPSuccess asserts that a specified handler returns a success status code.
 //
-//  assert.HTTPSuccess(t, myHandler, "POST", "http://www.google.com", nil)
+//	assert.HTTPSuccess(t, myHandler, "POST", "http://www.google.com", nil)
 //
 // Returns whether the assertion was successful (true) or not (false).
 func HTTPSuccess(t TestingT, handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -35,7 +35,7 @@ func HTTPSuccess(t TestingT, handler http.HandlerFunc, mode, url string, values 
 
 // HTTPRedirect asserts that a specified handler returns a redirect status code.
 //
-//  assert.HTTPRedirect(t, myHandler, "GET", "/a/b/c", url.Values{"a": []string{"b", "c"}}
+//	assert.HTTPRedirect(t, myHandler, "GET", "/a/b/c", url.Values{"a": []string{"b", "c"}}
 //
 // Returns whether the assertion was successful (true) or not (false).
 func HTTPRedirect(t TestingT, handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -48,7 +48,7 @@ func HTTPRedirect(t TestingT, handler http.HandlerFunc, mode, url string, values
 
 // HTTPError asserts that a specified handler returns an error status code.
 //
-//  assert.HTTPError(t, myHandler, "POST", "/a/b/c", url.Values{"a": []string{"b", "c"}}
+//	assert.HTTPError(t, myHandler, "POST", "/a/b/c", url.Values{"a": []string{"b", "c"}}
 //
 // Returns whether the assertion was successful (true) or not (false).
 func HTTPError(t TestingT, handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -74,7 +74,7 @@ func HTTPBody(handler http.HandlerFunc, mode, url string, values url.Values) str
 // HTTPBodyContains asserts that a specified handler returns a
 // body that contains a string.
 //
-//  assert.HTTPBodyContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
+//	assert.HTTPBodyContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
 //
 // Returns whether the assertion was successful (true) or not (false).
 func HTTPBodyContains(t TestingT, handler http.HandlerFunc, mode, url string, values url.Values, str interface{}) bool {
@@ -91,7 +91,7 @@ func HTTPBodyContains(t TestingT, handler http.HandlerFunc, mode, url string, va
 // HTTPBodyNotContains asserts that a specified handler returns a
 // body that does not contain a string.
 //
-//  assert.HTTPBodyNotContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
+//	assert.HTTPBodyNotContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
 //
 // Returns whether the assertion was successful (true) or not (false).
 func HTTPBodyNotContains(t TestingT, handler http.HandlerFunc, mode, url string, values url.Values, str interface{}) bool {
@@ -111,7 +111,7 @@ func HTTPBodyNotContains(t TestingT, handler http.HandlerFunc, mode, url string,
 
 // HTTPSuccess asserts that a specified handler returns a success status code.
 //
-//  assert.HTTPSuccess(myHandler, "POST", "http://www.google.com", nil)
+//	assert.HTTPSuccess(myHandler, "POST", "http://www.google.com", nil)
 //
 // Returns whether the assertion was successful (true) or not (false).
 func (a *Assertions) HTTPSuccess(handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -120,7 +120,7 @@ func (a *Assertions) HTTPSuccess(handler http.HandlerFunc, mode, url string, val
 
 // HTTPRedirect asserts that a specified handler returns a redirect status code.
 //
-//  assert.HTTPRedirect(myHandler, "GET", "/a/b/c", url.Values{"a": []string{"b", "c"}}
+//	assert.HTTPRedirect(myHandler, "GET", "/a/b/c", url.Values{"a": []string{"b", "c"}}
 //
 // Returns whether the assertion was successful (true) or not (false).
 func (a *Assertions) HTTPRedirect(handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -129,7 +129,7 @@ func (a *Assertions) HTTPRedirect(handler http.HandlerFunc, mode, url string, va
 
 // HTTPError asserts that a specified handler returns an error status code.
 //
-//  assert.HTTPError(myHandler, "POST", "/a/b/c", url.Values{"a": []string{"b", "c"}}
+//	assert.HTTPError(myHandler, "POST", "/a/b/c", url.Values{"a": []string{"b", "c"}}
 //
 // Returns whether the assertion was successful (true) or not (false).
 func (a *Assertions) HTTPError(handler http.HandlerFunc, mode, url string, values url.Values) bool {
@@ -139,7 +139,7 @@ func (a *Assertions) HTTPError(handler http.HandlerFunc, mode, url string, value
 // HTTPBodyContains asserts that a specified handler returns a
 // body that contains a string.
 //
-//  assert.HTTPBodyContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
+//	assert.HTTPBodyContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
 //
 // Returns whether the assertion was successful (true) or not (false).
 func (a *Assertions) HTTPBodyContains(handler http.HandlerFunc, mode, url string, values url.Values, str interface{}) bool {
@@ -149,7 +149,7 @@ func (a *Assertions) HTTPBodyContains(handler http.HandlerFunc, mode, url string
 // HTTPBodyNotContains asserts that a specified handler returns a
 // body that does not contain a string.
 //
-//  assert.HTTPBodyNotContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
+//	assert.HTTPBodyNotContains(t, myHandler, "www.google.com", nil, "I'm Feeling Lucky")
 //
 // Returns whether the assertion was successful (true) or not (false).
 func (a *Assertions) HTTPBodyNotContains(handler http.HandlerFunc, mode, url string, values url.Values, str interface{}) bool {

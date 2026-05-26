@@ -1,21 +1,11 @@
 package server
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"path/filepath"
 	"regexp"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/lestrrat-go/jsval"
-	"github.com/stripe/stripe-mock/param"
-	"github.com/stripe/stripe-mock/param/coercer"
 	"github.com/stripe/stripe-mock/spec"
 )
 
@@ -43,8 +33,8 @@ type DoubleSlashFixHandler struct {
 
 // ServeHTTP serves an HTTP request.
 func (h *DoubleSlashFixHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.URL.Path = strings.Replace(r.URL.Path, "//", "/", -1)
-	h.Mux.ServeHTTP(w, r)
+	_ = "STUB: not implemented"
+	return
 }
 
 // ExpansionLevel represents expansions on a single "level" of resource. It may
@@ -126,9 +116,8 @@ type PathParamsSecondaryID struct {
 // This function skips the case of an empty string value, so its use should be
 // preferred over using the internal slice directly.
 func (p *PathParamsSecondaryID) appendReplacedID(replacedID string) {
-	if replacedID != "" {
-		p.replacedIDs = append(p.replacedIDs, replacedID)
-	}
+	_ = "STUB: not implemented"
+	return
 }
 
 // ResponseError is a JSON-serializable structure representing an error
@@ -144,61 +133,19 @@ type ResponseError struct {
 //
 // If path is empty, fixtures are loaded from internal embedded assets.
 func LoadFixtures(embeddedFixtures []byte, fixturesPath string) (*spec.Fixtures, error) {
-	var data []byte
-	var err error
-
-	if fixturesPath == "" {
-		data = embeddedFixtures
-	} else {
-		if !isJSONFile(fixturesPath) {
-			return nil, fmt.Errorf("Fixtures should come from a JSON file")
-		}
-
-		data, err = ioutil.ReadFile(fixturesPath)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("error loading fixtures: %v", err)
-	}
-
-	var fixtures spec.Fixtures
-	err = json.Unmarshal(data, &fixtures)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding fixtures: %v", err)
-	}
-
-	return &fixtures, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 // LoadSpec loads OpenAPI spec from a JSON file
 //
 // If path is empty, the spec is loaded from internal embedded assets.
 func LoadSpec(embeddedSpec []byte, specPath string) (*spec.Spec, error) {
-	var data []byte
-	var err error
-
-	if specPath == "" {
-		// Use the embedded spec
-		data = embeddedSpec
-	} else {
-		if !isJSONFile(specPath) {
-			return nil, fmt.Errorf("spec should come from a JSON file")
-		}
-
-		data, err = ioutil.ReadFile(specPath)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("error loading spec: %v", err)
-	}
-
-	var stripeSpec spec.Spec
-	err = json.Unmarshal(data, &stripeSpec)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding spec: %v", err)
-	}
-
-	return &stripeSpec, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
+
+// Use the embedded spec
 
 // StubServer handles incoming HTTP requests and responds to them appropriately
 // based off the set of OpenAPI routes that it's been configured with.
@@ -212,280 +159,75 @@ type StubServer struct {
 
 // NewStubServer creates a new instance of StubServer
 func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck, verbose bool) (*StubServer, error) {
-	s := StubServer{
-		fixtures:           fixtures,
-		spec:               spec,
-		strictVersionCheck: strictVersionCheck,
-		verbose:            verbose,
-	}
-	err := s.initializeRouter()
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 // HandleRequest handes an HTTP request directed at the API stub.
 func (s *StubServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	fmt.Printf("Request: %v %v\n", r.Method, r.URL.Path)
-
-	//
-	// Validate headers
-	//
-
-	auth := r.Header.Get("Authorization")
-	if !validateAuth(auth) {
-		message := fmt.Sprintf(invalidAuthorization, auth)
-		stripeError := createStripeError(typeInvalidRequestError, message)
-		writeResponse(w, r, start, http.StatusUnauthorized, stripeError)
-		return
-	}
-
-	// If the option `-strict-version-check` is on, any request that sends an
-	// explicit `Stripe-Version` header must have a version that matches that
-	// the one in the OpenAPI spec. This allows the user to optionally
-	// strengthen expectations to protect against an unintended version drift.
-	if s.strictVersionCheck {
-		stripeVersion := r.Header.Get("Stripe-Version")
-		if stripeVersion != "" && stripeVersion != s.spec.Info.Version {
-			message := fmt.Sprintf(invalidStripeVersion, stripeVersion, s.spec.Info.Version)
-			stripeError := createStripeError(typeInvalidRequestError, message)
-			writeResponse(w, r, start, http.StatusBadRequest, stripeError)
-			return
-		}
-	}
-
-	//
-	// Set headers
-	//
-
-	// We don't do anything with the idempotency key for now, but reflect it
-	// back into response headers like the Stripe API does.
-	idempotencyKey := r.Header.Get("Idempotency-Key")
-	if idempotencyKey != "" {
-		w.Header().Set("Idempotency-Key", idempotencyKey)
-	}
-
-	// Every response needs a Request-Id header except the invalid authorization
-	w.Header().Set("Request-Id", "req_123")
-
-	//
-	// Route request
-	//
-
-	route, pathParams, err := s.routeRequest(r)
-	if err != nil {
-		message := fmt.Sprintf("Couldn't parse path parameters: %v", err)
-		fmt.Printf(message + "\n")
-		stripeError := createStripeError(typeInvalidRequestError, message)
-		writeResponse(w, r, start, http.StatusBadRequest, stripeError)
-		return
-	}
-
-	if route == nil {
-		message := fmt.Sprintf(invalidRoute, r.Method, r.URL.Path)
-		stripeError := createStripeError(typeInvalidRequestError, message)
-		writeResponse(w, r, start, http.StatusNotFound, stripeError)
-		return
-	}
-
-	response, ok := route.operation.Responses["200"]
-	if !ok {
-		fmt.Printf("Couldn't find 200 response in spec\n")
-		writeResponse(w, r, start, http.StatusInternalServerError,
-			createInternalServerError())
-		return
-	}
-
-	var responseContent spec.MediaType
-
-	if jsonResponseContent, ok := response.Content["application/json"]; ok && jsonResponseContent.Schema != nil {
-		w.Header().Set("Content-Type", "application/json")
-		responseContent = jsonResponseContent
-	} else if pdfResponseContent, ok := response.Content["application/pdf"]; ok && pdfResponseContent.Schema != nil {
-		w.Header().Set("Content-Type", "application/pdf")
-		responseContent = pdfResponseContent
-	} else {
-		fmt.Printf("Couldn't find application/json or application/pdf in response\n")
-		writeResponse(w, r, start, http.StatusInternalServerError,
-			createInternalServerError())
-		return
-	}
-
-	if s.verbose {
-		fmt.Printf("IDs extracted from route: %+v\n", pathParams)
-		fmt.Printf("Response schema: %s\n", responseContent.Schema)
-	}
-
-	requestData, err := param.ParseParams(r)
-	if err != nil {
-		message := fmt.Sprintf("Couldn't parse query/body: %v", err)
-		fmt.Printf(message + "\n")
-		stripeError := createStripeError(typeInvalidRequestError, message)
-		writeResponse(w, r, start, http.StatusBadRequest, stripeError)
-		return
-	}
-
-	if s.verbose {
-		if requestData != nil {
-			fmt.Printf("Request data: %+v\n", requestData)
-		} else {
-			fmt.Printf("Request data: (none)\n")
-		}
-	}
-
-	// Note that requestData is actually manipulated in place, but we show it
-	// returned here to make it clear that this function will be manipulating
-	// it.
-	requestData, stripeError := validateAndCoerceRequest(r, route, requestData)
-	if stripeError != nil {
-		writeResponse(w, r, start, http.StatusBadRequest, stripeError)
-		return
-	}
-
-	expansions, rawExpansions := extractExpansions(requestData)
-	if s.verbose {
-		fmt.Printf("Expansions: %+v\n", rawExpansions)
-	}
-
-	generator := DataGenerator{s.spec.Components.Schemas, s.fixtures, s.verbose}
-	responseData, err := generator.Generate(&GenerateParams{
-		Expansions:    expansions,
-		PathParams:    pathParams,
-		RequestData:   requestData,
-		RequestMethod: r.Method,
-		RequestPath:   r.URL.Path,
-		Schema:        responseContent.Schema,
-	})
-	if err != nil {
-		fmt.Printf("Couldn't generate response: %v\n", err)
-		writeResponse(w, r, start, http.StatusInternalServerError,
-			createInternalServerError())
-		return
-	}
-	if s.verbose {
-		responseDataJSON, err := json.MarshalIndent(responseData, "", "  ")
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("Response data: %s\n", responseDataJSON)
-	}
-	writeResponse(w, r, start, http.StatusOK, responseData)
+	_ = "STUB: not implemented"
+	return
 }
 
-func (s *StubServer) initializeRouter() error {
-	var numEndpoints int
-	var numPaths int
-	var numValidators int
+//
+// Validate headers
+//
 
-	s.routes = make(map[spec.HTTPVerb][]stubServerRoute)
+// If the option `-strict-version-check` is on, any request that sends an
+// explicit `Stripe-Version` header must have a version that matches that
+// the one in the OpenAPI spec. This allows the user to optionally
+// strengthen expectations to protect against an unintended version drift.
 
-	componentsForValidation := spec.GetComponentsForValidation(&s.spec.Components)
+//
+// Set headers
+//
 
-	for path, verbs := range s.spec.Paths {
-		numPaths++
+// We don't do anything with the idempotency key for now, but reflect it
+// back into response headers like the Stripe API does.
 
-		pathPattern, pathParamNames := compilePath(path)
+// Every response needs a Request-Id header except the invalid authorization
 
-		if s.verbose {
-			fmt.Printf("Compiled path: %v\n", pathPattern.String())
-		}
+//
+// Route request
+//
 
-		for verb, operation := range verbs {
-			numEndpoints++
+// Note that requestData is actually manipulated in place, but we show it
+// returned here to make it clear that this function will be manipulating
+// it.
 
-			var requestMediaType *string
-			var requestSchema *spec.Schema
-			var requestValidator *jsval.JSVal
+func (s *StubServer) initializeRouter() error { _ = "STUB: not implemented"; return nil }
 
-			// For `GET` requests we build a validator based off a
-			// pseudo-schema constructed from the endpoint's query parameters.
-			// For all other verbs we use the body schema.
-			//
-			// This is all a little weird and based off of how Stripe's OpenAPI
-			// specification is generated which is itself based off the
-			// original Rack confusion between query and body parameters
-			// (because it became ossified in Stripe's server implementation).
-			if verb == "get" {
-				requestSchema = spec.BuildQuerySchema(operation)
+// For `GET` requests we build a validator based off a
+// pseudo-schema constructed from the endpoint's query parameters.
+// For all other verbs we use the body schema.
+//
+// This is all a little weird and based off of how Stripe's OpenAPI
+// specification is generated which is itself based off the
+// original Rack confusion between query and body parameters
+// (because it became ossified in Stripe's server implementation).
 
-				var err error
-				requestValidator, err = spec.GetValidatorForOpenAPI3Schema(
-					requestSchema, nil)
-				if err != nil {
-					return err
-				}
-			} else {
-				requestMediaType, requestSchema = getRequestBodySchema(operation)
+// Note that this may be nil if no suitable validator could be
+// generated.
 
-				if requestSchema != nil {
-					var err error
-					requestValidator, err = spec.GetValidatorForOpenAPI3Schema(
-						requestSchema, componentsForValidation)
-					if err != nil {
-						return err
-					}
-				}
-			}
+// We use whether the route ends with a parameter as a heuristic as
+// to whether we should expect an object's primary ID in the URL.
+//
+// The most common suffix in hasPrimaryIDSuffixes is just `}` which
+// represents the end of a parameter.
+//
+// It also has a lot of other special cases for RPC-style actions
+// like `/approve`.
 
-			// Note that this may be nil if no suitable validator could be
-			// generated.
-			if requestValidator != nil {
-				numValidators++
-			}
+// net/http will always give us verbs in uppercase, so build our
+// routing table this way too
 
-			// We use whether the route ends with a parameter as a heuristic as
-			// to whether we should expect an object's primary ID in the URL.
-			//
-			// The most common suffix in hasPrimaryIDSuffixes is just `}` which
-			// represents the end of a parameter.
-			//
-			// It also has a lot of other special cases for RPC-style actions
-			// like `/approve`.
-			var hasPrimaryID bool
-			for _, suffix := range hasPrimaryIDSuffixes {
-				if strings.HasSuffix(string(path), suffix) {
-					hasPrimaryID = true
-					break
-				}
-			}
-
-			route := stubServerRoute{
-				hasPrimaryID:     hasPrimaryID,
-				pattern:          pathPattern,
-				operation:        operation,
-				pathParamNames:   pathParamNames,
-				requestMediaType: requestMediaType,
-				requestSchema:    requestSchema,
-				requestValidator: requestValidator,
-			}
-
-			// net/http will always give us verbs in uppercase, so build our
-			// routing table this way too
-			verb = spec.HTTPVerb(strings.ToUpper(string(verb)))
-
-			s.routes[verb] = append(s.routes[verb], route)
-		}
-	}
-
-	for _, verbRoutes := range s.routes {
-		// After sorting all routes, order them by their number of path
-		// parameters so that paths with static portions will tend to be
-		// preferred over those with dynamic parts.
-		//
-		// For example, `/v1/invoices/upcoming` should be preferred over
-		// `/v1/invoices/:invoice` even though both will match the string
-		// `/v1/invoices/upcoming`.
-		sort.Slice(verbRoutes, func(i, j int) bool {
-			return len(verbRoutes[i].pathParamNames) < len(verbRoutes[j].pathParamNames)
-		})
-	}
-
-	fmt.Printf("Routing to %v path(s) and %v endpoint(s) with %v validator(s)\n",
-		numPaths, numEndpoints, numValidators)
-	return nil
-}
+// After sorting all routes, order them by their number of path
+// parameters so that paths with static portions will tend to be
+// preferred over those with dynamic parts.
+//
+// For example, `/v1/invoices/upcoming` should be preferred over
+// `/v1/invoices/:invoice` even though both will match the string
+// `/v1/invoices/upcoming`.
 
 // routeRequest tries to find a matching route for the given request. If
 // successful, it returns the matched route and where possible, an extracted ID
@@ -494,83 +236,40 @@ func (s *StubServer) initializeRouter() error {
 // object (i.e., the route's pattern ended with a parameter). A nil is returned
 // as the second return value when no primary ID is available.
 func (s *StubServer) routeRequest(r *http.Request) (*stubServerRoute, *PathParamsMap, error) {
-	verbRoutes := s.routes[spec.HTTPVerb(r.Method)]
-	for _, route := range verbRoutes {
-		matches := route.pattern.FindAllStringSubmatch(r.URL.Path, -1)
-
-		if len(matches) < 1 {
-			continue
-		}
-
-		// There are no path parameters. Return the route only.
-		if len(route.pathParamNames) < 1 {
-			return &route, nil, nil
-		}
-
-		// There will only ever be a single match in the string (this match
-		// contains the entire match plus all capture groups).
-		firstMatch := matches[0]
-
-		// Unescape each parameter in the path. Converts hex-encoded bytes like
-		// `%AB` into the byte itself and `+`s into spaces.
-		for i := 1; i < len(firstMatch); i++ {
-			unescaped, err := url.QueryUnescape(firstMatch[i])
-			if err != nil {
-				return nil, nil, fmt.Errorf("Failed to unescape path parameter %v: %v", i, err)
-			}
-			firstMatch[i] = unescaped
-		}
-
-		// Secondary IDs are any IDs in the URL that are *not* the primary ID
-		// (which you'll see if say a resource is nested under another
-		// resource).
-		//
-		// Normally, we can calculate the number of secondary IDs based on the
-		// number of path parameters by subtracting one for the primary ID.
-		// There's a special case if the path doesn't have a primary ID in
-		// which the number of secondary IDs equals the number of path
-		// parameters.
-		var numSecondaryIDs int
-		if route.hasPrimaryID {
-			numSecondaryIDs = len(route.pathParamNames) - 1
-		} else {
-			numSecondaryIDs = len(route.pathParamNames)
-		}
-
-		var secondaryIDs []*PathParamsSecondaryID
-		if numSecondaryIDs > 0 {
-			secondaryIDs = make([]*PathParamsSecondaryID, numSecondaryIDs)
-			for i := 0; i < numSecondaryIDs; i++ {
-				secondaryIDs[i] = &PathParamsSecondaryID{
-					// Note that the first position of `firstMatch` is the
-					// entire matching string. Capture groups start at position
-					// 1, so we add one to `i`.
-					ID: firstMatch[i+1],
-
-					Name: route.pathParamNames[i],
-				}
-			}
-		}
-
-		// Not all routes have a primary ID even if they might have secondary
-		// IDs. Consider for example a list endpoint nested under another
-		// resource:
-		//
-		//     GET "/v1/application_fees/fee_123/refunds
-		//
-		var primaryID *string
-		if route.hasPrimaryID {
-			primaryID = &firstMatch[len(firstMatch)-1]
-		}
-
-		// Return the route along with any IDs that matched in the path.
-		return &route, &PathParamsMap{
-			PrimaryID:    primaryID,
-			SecondaryIDs: secondaryIDs,
-		}, nil
-	}
+	_ = "STUB: not implemented"
 	return nil, nil, nil
 }
+
+// There are no path parameters. Return the route only.
+
+// There will only ever be a single match in the string (this match
+// contains the entire match plus all capture groups).
+
+// Unescape each parameter in the path. Converts hex-encoded bytes like
+// `%AB` into the byte itself and `+`s into spaces.
+
+// Secondary IDs are any IDs in the URL that are *not* the primary ID
+// (which you'll see if say a resource is nested under another
+// resource).
+//
+// Normally, we can calculate the number of secondary IDs based on the
+// number of path parameters by subtracting one for the primary ID.
+// There's a special case if the path doesn't have a primary ID in
+// which the number of secondary IDs equals the number of path
+// parameters.
+
+// Note that the first position of `firstMatch` is the
+// entire matching string. Capture groups start at position
+// 1, so we add one to `i`.
+
+// Not all routes have a primary ID even if they might have secondary
+// IDs. Consider for example a list endpoint nested under another
+// resource:
+//
+//     GET "/v1/application_fees/fee_123/refunds
+//
+
+// Return the route along with any IDs that matched in the path.
 
 //
 // Private values
@@ -657,71 +356,25 @@ type stubServerRoute struct {
 // names for the parameters included in the path in order of their appearance.
 // This slice is `nil` if the path had no parameters.
 func compilePath(path spec.Path) (*regexp.Regexp, []string) {
-	var pathParamNames []string
-	parts := strings.Split(string(path), "/")
-	pattern := `\A`
-
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-
-		submatches := pathParameterPattern.FindAllStringSubmatch(part, -1)
-		if submatches == nil {
-			pattern += `/` + part
-		} else {
-			// Special characters as defined by:
-			//
-			// https://tools.ietf.org/html/rfc3986#section-3.3
-			pattern += `/(?P<` + submatches[0][1] + `>[\w@:%-._~!$&'()*+,;=]+)`
-			pathParamNames = append(pathParamNames, submatches[0][1])
-		}
-	}
-
-	return regexp.MustCompile(pattern + `\z`), pathParamNames
+	_ = "STUB: not implemented"
+	return nil, nil
 }
+
+// Special characters as defined by:
+//
+// https://tools.ietf.org/html/rfc3986#section-3.3
 
 // Helper to create an internal server error for API issues.
-func createInternalServerError() *ResponseError {
-	return createStripeError(typeInvalidRequestError, internalServerError)
-}
+func createInternalServerError() *ResponseError { _ = "STUB: not implemented"; return nil }
 
 // This creates a Stripe error to return in case of API errors.
 func createStripeError(errorType string, errorMessage string) *ResponseError {
-	return &ResponseError{
-		ErrorInfo: struct {
-			Message string `json:"message"`
-			Type    string `json:"type"`
-		}{
-			Message: errorMessage,
-			Type:    errorType,
-		},
-	}
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func extractExpansions(data map[string]interface{}) (*ExpansionLevel, []string) {
-	expand, ok := data["expand"]
-	if !ok {
-		return nil, nil
-	}
-
-	var expansions []string
-
-	expandStr, ok := expand.(string)
-	if ok {
-		expansions = append(expansions, expandStr)
-		return parseExpansionLevel(expansions), expansions
-	}
-
-	expandArr, ok := expand.([]interface{})
-	if ok {
-		for _, expand := range expandArr {
-			expandStr := expand.(string)
-			expansions = append(expansions, expandStr)
-		}
-		return parseExpansionLevel(expansions), expansions
-	}
-
+	_ = "STUB: not implemented"
 	return nil, nil
 }
 
@@ -733,50 +386,16 @@ func extractExpansions(data map[string]interface{}) (*ExpansionLevel, []string) 
 // The first value is a media type like "application/x-www-form-urlencoded", or
 // nil if the operation has no request schemas.
 func getRequestBodySchema(operation *spec.Operation) (*string, *spec.Schema) {
-	if operation.RequestBody == nil {
-		return nil, nil
-	}
-
-	for mediaType, spec := range operation.RequestBody.Content {
-		return &mediaType, spec.Schema
-	}
-
+	_ = "STUB: not implemented"
 	return nil, nil
 }
 
-func isCurl(userAgent string) bool {
-	return strings.HasPrefix(userAgent, "curl/")
-}
+func isCurl(userAgent string) bool { _ = "STUB: not implemented"; return false }
 
 // parseExpansionLevel parses a set of raw expansions from a request query
 // string or form and produces a structure more useful for performing actual
 // expansions.
-func parseExpansionLevel(raw []string) *ExpansionLevel {
-	sort.Strings(raw)
-
-	level := &ExpansionLevel{expansions: make(map[string]*ExpansionLevel)}
-	groups := make(map[string][]string)
-
-	for _, expansion := range raw {
-		parts := strings.Split(expansion, ".")
-		if len(parts) == 1 {
-			if parts[0] == "*" {
-				level.wildcard = true
-			} else {
-				level.expansions[parts[0]] =
-					&ExpansionLevel{expansions: make(map[string]*ExpansionLevel)}
-			}
-		} else {
-			groups[parts[0]] = append(groups[parts[0]], strings.Join(parts[1:], "."))
-		}
-	}
-
-	for key, subexpansions := range groups {
-		level.expansions[key] = parseExpansionLevel(subexpansions)
-	}
-
-	return level
-}
+func parseExpansionLevel(raw []string) *ExpansionLevel { _ = "STUB: not implemented"; return nil }
 
 // validateAndCoerceRequest validates an incoming request against an OpenAPI
 // schema and does parameter coercion.
@@ -788,6 +407,7 @@ func validateAndCoerceRequest(
 	r *http.Request,
 	route *stubServerRoute,
 	requestData map[string]interface{}) (map[string]interface{}, *ResponseError) {
+	_ = "STUB: not implemented"
 
 	// We only check content type on non-`GET` non-`DELETE` requests.
 	//
@@ -797,139 +417,33 @@ func validateAndCoerceRequest(
 	// `DELETE` will often have no parameters. When it does, they're in the
 	// body, but we'll ignore content type validation in this one case for
 	// simplicity.
-	if r.Method != http.MethodDelete && r.Method != http.MethodGet {
-		contentType := r.Header.Get("Content-Type")
-		if contentType == "" {
-			message := fmt.Sprintf(contentTypeEmpty, *route.requestMediaType)
-			fmt.Printf(message + "\n")
-			return nil, createStripeError(typeInvalidRequestError, message)
-		}
-
-		// Truncate content type parameters. For example, given:
-		//
-		//     application/json; charset=utf-8
-		//
-		// We want to chop off the `; charset=utf-8` at the end.
-		contentType = strings.Split(contentType, ";")[0]
-
-		if contentType != *route.requestMediaType {
-			message := fmt.Sprintf(contentTypeMismatched, *route.requestMediaType, contentType)
-			fmt.Printf(message + "\n")
-			return nil, createStripeError(typeInvalidRequestError, message)
-		}
-	}
-
-	err := coercer.CoerceParams(route.requestSchema, requestData)
-	if err != nil {
-		message := fmt.Sprintf("Request coercion error: %v", err)
-		fmt.Printf(message + "\n")
-		return nil, createStripeError(typeInvalidRequestError, message)
-	}
-
-	fmt.Printf("Request data = %+v\n", requestData)
-	err = route.requestValidator.Validate(requestData)
-	if err != nil {
-		message := fmt.Sprintf("Request validation error: %v", err)
-		fmt.Printf(message + "\n")
-		return nil, createStripeError(typeInvalidRequestError, message)
-	}
-
-	// All checks were successful.
-	return requestData, nil
+	return nil, nil
 }
 
-func validateAuth(auth string) bool {
-	if auth == "" {
-		return false
-	}
+// Truncate content type parameters. For example, given:
+//
+//     application/json; charset=utf-8
+//
+// We want to chop off the `; charset=utf-8` at the end.
 
-	parts := strings.Split(auth, " ")
+// All checks were successful.
 
-	// Expect ["Bearer", "sk_test_123"] or ["Basic", "aaaaa"]
-	if len(parts) != 2 || parts[1] == "" {
-		return false
-	}
+func validateAuth(auth string) bool { _ = "STUB: not implemented"; return false }
 
-	var key string
-	switch parts[0] {
-	case "Basic":
-		keyBytes, err := base64.StdEncoding.DecodeString(parts[1])
-		if err != nil {
-			return false
-		}
-		key = string(keyBytes)
+// Expect ["Bearer", "sk_test_123"] or ["Basic", "aaaaa"]
 
-	case "Bearer":
-		key = parts[1]
+// Expect ["sk", "test", "123"]
 
-	default:
-		return false
-	}
-
-	keyParts := strings.Split(key, "_")
-
-	// Expect ["sk", "test", "123"]
-	if len(keyParts) != 3 {
-		return false
-	}
-
-	if keyParts[0] != "rk" && keyParts[0] != "sk" {
-		return false
-	}
-
-	if keyParts[1] != "test" {
-		return false
-	}
-
-	// Expect something (anything but an empty string) in the third position
-	if len(keyParts[2]) == 0 {
-		return false
-	}
-
-	return true
-}
+// Expect something (anything but an empty string) in the third position
 
 func writeResponse(w http.ResponseWriter, r *http.Request, start time.Time, status int, data interface{}) {
-	if data == nil {
-		data = http.StatusText(status)
-	}
-
-	var encodedData []byte
-	var err error
-
-	// If no special Content-Type has been set, then we default to JSON.
-	if w.Header().Get("Content-Type") == "" {
-		w.Header().Set("Content-Type", "application/json")
-	}
-
-	if dataString, ok := data.(string); ok {
-		encodedData = []byte(dataString)
-	} else if !isCurl(r.Header.Get("User-Agent")) {
-		encodedData, err = json.Marshal(&data)
-	} else {
-		encodedData, err = json.MarshalIndent(&data, "", "  ")
-		encodedData = append(encodedData, '\n')
-	}
-
-	if err != nil {
-		fmt.Printf("Error serializing response: %v\n", err)
-		writeResponse(w, r, start, http.StatusInternalServerError, nil)
-		return
-	}
-
-	w.Header().Set("Stripe-Mock-Version", Version)
-
-	w.WriteHeader(status)
-	_, err = w.Write(encodedData)
-	if err != nil {
-		fmt.Printf("Error writing to client: %v\n", err)
-	}
-	fmt.Printf("Response: elapsed=%v status=%v\n", time.Now().Sub(start), status)
+	_ = "STUB: not implemented"
+	return
 }
+
+// If no special Content-Type has been set, then we default to JSON.
 
 // isJSONFile judges based on a file's extension whether it's a JSON file. It's
 // used to return a better error message if the user points to an unsupported
 // file.
-func isJSONFile(path string) bool {
-	return strings.ToLower(filepath.Ext(path)) == ".json"
-}
+func isJSONFile(path string) bool { _ = "STUB: not implemented"; return false }

@@ -60,7 +60,7 @@ func (c *ArrayConstraint) Validate(v interface{}) (err error) {
 		for i := 0; i < l; i++ {
 			iv := rv.Index(i).Interface()
 			kv := fmt.Sprintf("%s", iv)
-pdebug.Printf("unique? -> %s", kv)
+			pdebug.Printf("unique? -> %s", kv)
 			if _, ok := uitems[kv]; ok {
 				return errors.New("duplicate element found")
 			}

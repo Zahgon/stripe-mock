@@ -3,7 +3,7 @@ package builder
 import (
 	"errors"
 
-	"github.com/lestrrat-go/jsschema"
+	schema "github.com/lestrrat-go/jsschema"
 	"github.com/lestrrat-go/jsval"
 	"github.com/lestrrat-go/pdebug"
 )

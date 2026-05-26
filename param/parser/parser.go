@@ -1,9 +1,6 @@
 package parser
 
 import (
-	"net/url"
-	"strings"
-
 	"github.com/stripe/stripe-mock/param/form"
 )
 
@@ -18,38 +15,13 @@ import (
 //
 // Implementation modified from: https://github.com/deoxxa/urlqp
 func ParseFormString(s string) (form.Values, error) {
-	s = strings.TrimPrefix(s, "?")
-
-	if s == "" {
-		return nil, nil
-	}
-
-	rawValues := strings.Split(s, "&")
-	r := make(form.Values, len(rawValues))
-
-	for i, rawValue := range rawValues {
-		// Split this raw form value into two parts, at the first `=`
-		valueParts := strings.SplitN(rawValue, "=", 2)
-
-		formKey, err := url.QueryUnescape(valueParts[0])
-		if err != nil {
-			return nil, err
-		}
-
-		// Set a default for the value. Empty seems reasonable.
-		v := ""
-
-		// If `b` has more than one element, that means the second one will be the
-		// parameter value, so grab it.
-		if len(valueParts) > 1 {
-			v, err = url.QueryUnescape(valueParts[1])
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		r[i] = form.Pair{formKey, v}
-	}
-
-	return r, nil
+	_ = "STUB: not implemented"
+	return *new(form.Values), nil
 }
+
+// Split this raw form value into two parts, at the first `=`
+
+// Set a default for the value. Empty seems reasonable.
+
+// If `b` has more than one element, that means the second one will be the
+// parameter value, so grab it.

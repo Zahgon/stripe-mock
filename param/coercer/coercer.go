@@ -1,9 +1,7 @@
 package coercer
 
 import (
-	"fmt"
 	"regexp"
-	"strconv"
 
 	"github.com/stripe/stripe-mock/spec"
 )
@@ -14,20 +12,7 @@ import (
 // we'd like to work with a slightly wider variety of types like booleans and
 // integers.
 func CoerceParams(schema *spec.Schema, data map[string]interface{}) error {
-	for key, subSchema := range schema.Properties {
-		val, ok := data[key]
-		if !ok {
-			continue
-		}
-		coercedVal, ok, err := coerceSubSchema(val, subSchema)
-		if err != nil {
-			return err
-		}
-		if ok {
-			data[key] = coercedVal
-		}
-	}
-
+	_ = "STUB: not implemented"
 	return nil
 }
 
@@ -36,21 +21,16 @@ func CoerceParams(schema *spec.Schema, data map[string]interface{}) error {
 // `CoerceParams` only expecting object type with properties. This is also used in coercing each
 // sub-schema of anyOf or array.
 func coerceSubSchema(val interface{}, subSchema *spec.Schema) (interface{}, bool, error) {
-	if len(subSchema.Properties) == 0 {
-		// Non-object schemas are anyOf, array, and primitive schemas.
-		// Implicitly treats actual object schema with empty properties as non-object.
-		return coerceNonObjectSchema(val, subSchema)
-	}
+	_ = "STUB: not implemented"
+	return nil, false, nil
 
-	// `object` schema with properties
-	valMap, ok := val.(map[string]interface{})
-	var err error
-	if ok {
-		// unwrapping sub-schemas, and coerce contents in the map
-		err = CoerceParams(subSchema, valMap)
-	}
-	return valMap, ok, err
+	// Non-object schemas are anyOf, array, and primitive schemas.
+	// Implicitly treats actual object schema with empty properties as non-object.
 }
+
+// `object` schema with properties
+
+// unwrapping sub-schemas, and coerce contents in the map
 
 //
 // ---
@@ -79,37 +59,7 @@ var numberPattern = regexp.MustCompile(`\A\d+\z`)
 // value with a boolean true. On failure (say the value wasn't a type that
 // could be coerced) it returns nil and a boolean false.
 func coercePrimitiveType(val interface{}, primitiveType string) (interface{}, bool) {
-	valStr, ok := val.(string)
-	if !ok {
-		return nil, false
-	}
-
-	switch {
-	case primitiveType == booleanType:
-		valBool, err := strconv.ParseBool(valStr)
-		if err != nil {
-			return nil, false
-		}
-		return valBool, true
-
-	case primitiveType == integerType:
-		valInt, err := strconv.Atoi(valStr)
-		if err != nil {
-			return nil, false
-		}
-		return valInt, true
-
-	case primitiveType == numberType:
-		valFloat, err := strconv.ParseFloat(valStr, 64)
-		if err != nil {
-			return nil, false
-		}
-		return valFloat, true
-
-	case primitiveType == stringType:
-		return valStr, true
-	}
-
+	_ = "STUB: not implemented"
 	return nil, false
 }
 
@@ -118,89 +68,14 @@ func coercePrimitiveType(val interface{}, primitiveType string) (interface{}, bo
 // It's similar to coercePrimitiveType above (and indeed calls into it), but
 // also handles array and anyOf schema (supporting a number of different primitive types)
 func coerceNonObjectSchema(val interface{}, schema *spec.Schema) (interface{}, bool, error) {
-	if isSchemaPrimitiveType(schema) {
-		if schema.Enum != nil {
-			// assuming enum value isn't numeric string. when given anyOf schema with enum and
-			// number, the numeric string won't falsely be taken as enum and miss its coercion
-			_, isNumeric := coercePrimitiveType(val, numberType)
-			if isNumeric {
-				return nil, false, nil
-			}
-		}
-
-		val, ok := coercePrimitiveType(val, schema.Type)
-		return val, ok, nil
-	}
-
-	if schema.AdditionalProperties != nil {
-		valMap, ok := val.(map[string]interface{})
-		if ok {
-			allOk := true
-			for itemKey, itemVal := range valMap {
-				itemValCoerced, itemOk, err := coerceSubSchema(itemVal, schema.AdditionalProperties)
-				if err != nil {
-					return nil, false, err
-				}
-				if itemOk {
-					valMap[itemKey] = itemValCoerced
-				}
-				skipNilItem := itemVal == nil
-				allOk = allOk && (itemOk || skipNilItem)
-			}
-			if allOk {
-				return valMap, true, nil
-			}
-		}
-	}
-
-	if schema.AnyOf != nil {
-		for _, subSchema := range schema.AnyOf {
-			val, ok, err := coerceSubSchema(val, subSchema)
-			if ok {
-				return val, ok, err
-			}
-		}
-	}
-
-	if schema.Type == arrayType {
-		valMap, ok := val.(map[string]interface{})
-		if ok {
-			valSlice, err := parseIntegerIndexedMap(valMap)
-			if err != nil {
-				return nil, false, err
-			}
-			if valSlice != nil {
-				val = valSlice
-			}
-		}
-
-		valArr, ok := val.([]interface{})
-		if schema.Items == nil {
-			// underspecified array of primitive
-			return val, ok, nil
-		}
-
-		if ok {
-			allOk := true
-			for i, itemVal := range valArr {
-				itemValCoerced, itemOk, err := coerceSubSchema(itemVal, schema.Items)
-				if err != nil {
-					return nil, false, err
-				}
-				if itemOk {
-					valArr[i] = itemValCoerced
-				}
-				skipNilItem := itemVal == nil
-				allOk = allOk && (itemOk || skipNilItem)
-			}
-			if allOk {
-				return valArr, true, nil
-			}
-		}
-	}
-
+	_ = "STUB: not implemented"
 	return nil, false, nil
 }
+
+// assuming enum value isn't numeric string. when given anyOf schema with enum and
+// number, the numeric string won't falsely be taken as enum and miss its coercion
+
+// underspecified array of primitive
 
 // isSchemaPrimitiveType checks whether the given schema is a coercable
 // primitive type (as opposed to an object or array).
@@ -208,66 +83,14 @@ func coerceNonObjectSchema(val interface{}, schema *spec.Schema) (interface{}, b
 // The conditional ladder in this function should be *identical* to the one in
 // coercePrimitiveType (i.e., if support is added for a new type, it needs to
 // be added in both places).
-func isSchemaPrimitiveType(schema *spec.Schema) bool {
-	if schema.Type == booleanType {
-		return true
-	}
-
-	if schema.Type == integerType {
-		return true
-	}
-
-	if schema.Type == numberType {
-		return true
-	}
-
-	if schema.Type == stringType {
-		return true
-	}
-
-	return false
-}
+func isSchemaPrimitiveType(schema *spec.Schema) bool { _ = "STUB: not implemented"; return false }
 
 // parseIntegerIndexedMap tries to parse a map that has all integer-indexed
 // keys (e.g. { "0": ..., "1": "...", "2": "..." }) as a slice. We only try to
 // do this when we know that the target schema requires an array.
 func parseIntegerIndexedMap(valMap map[string]interface{}) ([]interface{}, error) {
-	allNumberedIndexes := true
-	biggestIndex := 0
-
-	for index := range valMap {
-		matched := numberPattern.MatchString(index)
-		if !matched {
-			allNumberedIndexes = false
-			break
-		}
-
-		valInt, err := strconv.Atoi(index)
-		if err != nil {
-			allNumberedIndexes = false
-			break
-		}
-
-		if valInt > biggestIndex {
-			biggestIndex = valInt
-		}
-	}
-
-	if !allNumberedIndexes {
-		return nil, nil
-	}
-
-	if biggestIndex > maxSliceSize {
-		return nil, fmt.Errorf("Index %v is too large, won't parse as slice", biggestIndex)
-	}
-
-	valSlice := make([]interface{}, biggestIndex+1)
-
-	for index, val := range valMap {
-		// Already checked error above
-		indexInt, _ := strconv.Atoi(index)
-		valSlice[indexInt] = val
-	}
-
-	return valSlice, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
+
+// Already checked error above

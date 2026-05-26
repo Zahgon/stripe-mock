@@ -5,11 +5,10 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"github.com/stripe/stripe-mock/embedded"
 	"net"
 	"net/http"
-	"os"
-	"strconv"
+
+	"github.com/stripe/stripe-mock/embedded"
 
 	"github.com/stripe/stripe-mock/server"
 )
@@ -204,186 +203,65 @@ type options struct {
 	beta               bool
 }
 
-func (o *options) checkConflictingOptions() error {
-	if o.unixSocket != "" && o.port != -1 {
-		return fmt.Errorf("Please specify only one of -port or -unix")
-	}
+func (o *options) checkConflictingOptions() error { _ = "STUB: not implemented"; return nil }
 
-	//
-	// HTTP
-	//
+//
+// HTTP
+//
 
-	if o.http && (o.httpUnixSocket != "" || o.httpAddr != "" || o.httpPort != -1) {
-		return fmt.Errorf("Please don't specify -http when using -http-addr, -http-port, or -http-unix")
-	}
-
-	if (o.unixSocket != "" || o.port != -1) && (o.httpUnixSocket != "" || o.httpAddr != "" || o.httpPort != -1) {
-		return fmt.Errorf("Please don't specify -port or -unix when using -http-addr, -http-port, or -http-unix")
-	}
-
-	var numHTTPOptions int
-
-	if o.httpUnixSocket != "" {
-		numHTTPOptions++
-	}
-	if o.httpAddr != "" {
-		numHTTPOptions++
-	}
-	if o.httpPort != -1 {
-		numHTTPOptions++
-	}
-
-	if numHTTPOptions > 1 {
-		return fmt.Errorf("Please specify only one of -http-addr, -http-port, or -http-unix")
-	}
-
-	//
-	// HTTPS
-	//
-
-	if o.https && (o.httpsUnixSocket != "" || o.httpsAddr != "" || o.httpsPort != -1) {
-		return fmt.Errorf("Please don't specify -https when using -https-addr, -https-port, or -https-unix")
-	}
-
-	if (o.unixSocket != "" || o.port != -1) && (o.httpsUnixSocket != "" || o.httpAddr != "" || o.httpsPort != -1) {
-		return fmt.Errorf("Please don't specify -port or -unix when using -https-addr, -https-port, or -https-unix")
-	}
-
-	var numHTTPSOptions int
-
-	if o.httpsUnixSocket != "" {
-		numHTTPSOptions++
-	}
-	if o.httpsAddr != "" {
-		numHTTPSOptions++
-	}
-	if o.httpsPort != -1 {
-		numHTTPSOptions++
-	}
-
-	if numHTTPSOptions > 1 {
-		return fmt.Errorf("Please specify only one of -https-addr, -https-port, or -https-unix")
-	}
-
-	return nil
-}
+//
+// HTTPS
+//
 
 // getHTTPListener gets a listener on a port or unix socket depending on the
 // options provided. If HTTP should not be enabled, it returns nil.
 func (o *options) getHTTPListener() (net.Listener, error) {
-	protocol := "HTTP"
-
-	if o.httpAddr != "" {
-		return getPortListener(o.httpAddr, protocol)
-	}
-
-	if o.httpPort != -1 {
-		return getPortListener(fmt.Sprintf(":%v", o.httpPort), protocol)
-	}
-
-	if o.httpUnixSocket != "" {
-		return getUnixSocketListener(o.httpUnixSocket, protocol)
-	}
-
-	// HTTPS is active by default, but only if HTTP has not been explicitly
-	// activated.
-	if o.https || o.httpsPort != -1 || o.httpsUnixSocket != "" {
-		return nil, nil
-	}
-
-	if o.port != -1 {
-		return getPortListener(fmt.Sprintf(":%v", o.port), protocol)
-	}
-
-	if o.unixSocket != "" {
-		return getUnixSocketListener(o.unixSocket, protocol)
-	}
-
-	return getPortListenerDefault(o.httpPortDefault, protocol)
+	_ = "STUB: not implemented"
+	return *new(net.Listener), nil
 }
+
+// HTTPS is active by default, but only if HTTP has not been explicitly
+// activated.
 
 // getNonSecureHTTPSListener gets a basic listener on a port or unix socket
 // depending on the options provided. Its return listener must still be wrapped
 // in a TLSListener. If HTTPS should not be enabled, it returns nil.
 func (o *options) getNonSecureHTTPSListener() (net.Listener, error) {
-	protocol := "HTTPS"
-
-	if o.httpsAddr != "" {
-		return getPortListener(o.httpsAddr, protocol)
-	}
-
-	if o.httpsPort != -1 {
-		return getPortListener(fmt.Sprintf(":%v", o.httpsPort), protocol)
-	}
-
-	if o.httpsUnixSocket != "" {
-		return getUnixSocketListener(o.httpsUnixSocket, protocol)
-	}
-
-	// HTTPS is active by default, but only if HTTP has not been explicitly
-	// activated. HTTP may be activated with `-http`, `-http-port`, or
-	// `-http-unix`, but also with the old backwards compatible basic `-port`
-	// option.
-	if o.http || o.httpPort != -1 || o.httpUnixSocket != "" || o.port != -1 {
-		return nil, nil
-	}
-
-	if o.port != -1 {
-		return getPortListener(fmt.Sprintf(":%v", o.port), protocol)
-	}
-
-	if o.unixSocket != "" {
-		return getUnixSocketListener(o.unixSocket, protocol)
-	}
-
-	return getPortListenerDefault(o.httpsPortDefault, protocol)
+	_ = "STUB: not implemented"
+	return *new(net.Listener), nil
 }
+
+// HTTPS is active by default, but only if HTTP has not been explicitly
+// activated. HTTP may be activated with `-http`, `-http-port`, or
+// `-http-unix`, but also with the old backwards compatible basic `-port`
+// option.
 
 //
 // Private functions
 //
 
-func abort(message string) {
-	fmt.Fprint(os.Stderr, message)
-	os.Exit(1)
-}
+func abort(message string) { _ = "STUB: not implemented"; return }
 
 // getTLSCertificate reads a certificate and key embedded into the binary
 func getTLSCertificate() (tls.Certificate, error) {
-	return tls.X509KeyPair(embedded.CertCert, embedded.CertKey)
+	_ = "STUB: not implemented"
+	return *new(tls.Certificate), nil
 }
 
 func getPortListener(addr string, protocol string) (net.Listener, error) {
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("error listening at address: %v", err)
-	}
-
-	fmt.Printf("Listening for %s at address: %v\n", protocol, listener.Addr())
-	return listener, nil
+	_ = "STUB: not implemented"
+	return *new(net.Listener), nil
 }
 
 // getPortListenerDefault gets a port listener based on the environment
 // variable `PORT`, or falls back to a listener on the default port
 // (`defaultPort`) if one was not present.
 func getPortListenerDefault(defaultPort int, protocol string) (net.Listener, error) {
-	if os.Getenv("PORT") != "" {
-		envPort, err := strconv.Atoi(os.Getenv("PORT"))
-		if err != nil {
-			return nil, err
-		}
-		return getPortListener(fmt.Sprintf(":%v", envPort), protocol)
-	}
-
-	return getPortListener(fmt.Sprintf(":%v", defaultPort), protocol)
+	_ = "STUB: not implemented"
+	return *new(net.Listener), nil
 }
 
 func getUnixSocketListener(unixSocket, protocol string) (net.Listener, error) {
-	listener, err := net.Listen("unix", unixSocket)
-	if err != nil {
-		return nil, fmt.Errorf("error listening on socket: %v", err)
-	}
-
-	fmt.Printf("Listening for %s on Unix socket: %s\n", protocol, unixSocket)
-	return listener, nil
+	_ = "STUB: not implemented"
+	return *new(net.Listener), nil
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/lestrrat-go/pdebug"
 )
 
-// RefResolver is a mandatory object that you must pass to a 
+// RefResolver is a mandatory object that you must pass to a
 // ReferenceConstraint upon its creation. This is responsible
 // for resolving the reference to an actual constraint.
 type RefResolver interface {
